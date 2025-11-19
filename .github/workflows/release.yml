@@ -22,7 +22,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           server-id: github
-          settings-path: ${{ github.workspace }}
 
       - name: Publish to GitHub Packages
         run: mvn --batch-mode deploy
