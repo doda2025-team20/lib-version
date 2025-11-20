@@ -40,18 +40,26 @@
         </dependency>
     </dependencies>
 
-    <!-- Needed for F11 version automation -->
+    <!-- 🔥 Github Packages deployment configuration -->
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/doda2025-team20/lib-version</url>
+        </repository>
+    </distributionManagement>
+
+    <!-- 🔧 Build plugins needed for F11 -->
     <build>
         <plugins>
-
-            <!-- Allows GitHub Actions to change the <version> in pom.xml -->
+            <!-- Needed to bump versions during release workflows -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>2.16.0</version>
             </plugin>
 
-            <!-- Deploys the JAR to GitHub Package Registry -->
+            <!-- Required for deploying to GitHub Packages -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
