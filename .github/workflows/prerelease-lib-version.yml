@@ -1,0 +1,43 @@
+name: Pre-release lib-version
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  packages: write
+
+jobs:
+  prerelease:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Compute pre-release version
+        id: version
+        run: |
+          BASE_VERSION=$(grep -m1 '<version>' pom.xml | sed -E 's/.*<version>(.*)<\/version>.*/\1/' | sed 's/-SNAPSHOT//')
+          BRANCH="${GITHUB_REF_NAME}"
+          SAFE_BRANCH=$(echo "$BRANCH" | tr '/_' '-' )
+          TS=$(date -u +"%Y%m%d-%H%M%S")
+          PRE_VERSION="${BASE_VERSION}-${SAFE_BRANCH}-${TS}"
+          echo "pre_version=$PRE_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set version in pom.xml
+        run: |
+          mvn -B versions:set -DnewVersion=${{ steps.version.outputs.pre_version }}
+          mvn -B versions:commit
+
+      - name: Build and deploy pre-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mvn -B -DskipTests deploy
