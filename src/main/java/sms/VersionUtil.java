@@ -1,14 +1,11 @@
 package sms;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 
 public final class VersionUtil {
 
-    private static final String VERSION_FILE = "/version.txt";
+    private static final String VERSION_PROPERTIES_FILE = "/version.properties";
     private static final String version = loadVersion();
 
     private VersionUtil() {
@@ -16,17 +13,16 @@ public final class VersionUtil {
     }
 
     private static String loadVersion() {
-        try (InputStream in = VersionUtil.class.getResourceAsStream(VERSION_FILE)) {
-            if (in == null) {
-                return "UNKNOWN";
+        Properties props = new Properties();
+        try (InputStream in = VersionUtil.class.getResourceAsStream(VERSION_PROPERTIES_FILE)) {
+            if (in != null) {
+                props.load(in);
             }
-            try (BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                String line = r.readLine();
-                return (line == null || line.trim().isEmpty()) ? "UNKNOWN" : line.trim();
-            }
-        } catch (IOException e) {
+        } catch (Exception e) {
             return "UNKNOWN";
         }
+
+        return props.getProperty("version", "UNKNOWN");
     }
 
     public static String getVersion() {
