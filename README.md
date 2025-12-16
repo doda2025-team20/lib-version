@@ -21,16 +21,25 @@ The project builds a JAR artifact:
 - artifactId: `lib-version`
 - version: `X.Y.Z`
 
-### Released to GitHub Packages
+### Automated Releases
 
-A release workflow (`release.yml`) deploys the library to the GitHub Maven Package Registry when a tag matching `vX.Y.Z` is pushed.
+The project uses GitHub Actions for automated releases to the GitHub Maven Package Registry.
 
-The workflow:
-- Checks out the repo
-- Sets up JDK 17
-- Runs `mvn deploy`
-- Publishes using the repo's `${{ secrets.GITHUB_TOKEN }}`
-- Uses the version declared in `pom.xml` as the single source of truth
+#### Official Release (`release-lib-version.yml`)
+- **Trigger:** Manual (`workflow_dispatch`).
+- **Process:**
+  1. Removes `-SNAPSHOT` from the version in `pom.xml`.
+  2. Deploys the artifact to GitHub Packages.
+  3. Creates a git tag `vX.Y.Z`.
+  4. Bumps the version to the next snapshot (e.g., `0.0.5-SNAPSHOT` -> `0.0.6-SNAPSHOT`).
+  5. Pushes the commits and tag back to `main`.
+
+#### Pre-release (`prerelease-lib-version.yml`)
+- **Trigger:** Push to any branch except `main`.
+- **Process:**
+  1. Generates a version based on the branch name and timestamp (e.g., `0.0.5-feature-branch-20231217-120000`).
+  2. Deploys the artifact to GitHub Packages.
+  3. Does **not** commit changes or create tags.
 
 ## Usage in Other Projects
 

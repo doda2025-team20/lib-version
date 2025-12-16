@@ -1,14 +1,6 @@
 name: Release lib-version
 
-on:
-  workflow_dispatch:
-    inputs:
-      release_version:
-        description: "Stable version, e.g. 0.0.1"
-        required: true
-      next_snapshot:
-        description: "Next dev version, e.g. 0.0.2-SNAPSHOT"
-        required: true
+on: workflow_dispatch
 
 permissions:
   contents: write
@@ -17,7 +9,6 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,16 +20,19 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: maven
 
       - name: Set git user
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Set release version
+      - name: Remove SNAPSHOT (Prepare Release)
         run: |
-          mvn -B versions:set -DnewVersion=${{ github.event.inputs.release_version }}
-          mvn -B versions:commit
+          mvn -B versions:set -DremoveSnapshot -DgenerateBackupPoms=false
+          
+          RELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
 
       - name: Deploy release
         env:
@@ -48,18 +42,20 @@ jobs:
       - name: Commit release version and tag
         run: |
           git add pom.xml
-          git commit -m "Release ${{ github.event.inputs.release_version }}"
-          git tag v${{ github.event.inputs.release_version }}
+          git commit -m "Release ${{ env.RELEASE_VERSION }}"
+          git tag "v${{ env.RELEASE_VERSION }}"
 
-      - name: Set next snapshot version
+      - name: Bump to next snapshot version
         run: |
-          mvn -B versions:set -DnewVersion=${{ github.event.inputs.next_snapshot }}
-          mvn -B versions:commit
+          mvn versions:set -DnextSnapshot=true -DgenerateBackupPoms=false
+          
+          NEXT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "NEXT_VERSION=$NEXT_VERSION" >> $GITHUB_ENV
 
       - name: Commit next snapshot
         run: |
           git add pom.xml
-          git commit -m "Set next version ${{ github.event.inputs.next_snapshot }}"
+          git commit -m "Set next version: ${{ env.NEXT_VERSION }}"
 
       - name: Push changes and tags
         env:
