@@ -7,11 +7,11 @@ on:
 
 permissions:
   packages: write
+  contents: read
 
 jobs:
   prerelease:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,20 +21,22 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: maven
 
       - name: Compute pre-release version
         id: version
         run: |
-          BASE_VERSION=$(grep -m1 '<version>' pom.xml | sed -E 's/.*<version>(.*)<\/version>.*/\1/' | sed 's/-SNAPSHOT//')
-          BRANCH="${GITHUB_REF_NAME}"
-          SAFE_BRANCH=$(echo "$BRANCH" | tr '/_' '-' )
+          # Extract base version (e.g., 1.2.3-SNAPSHOT -> 1.2.3)
+          BASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//')
+          SAFE_BRANCH=$(echo "${GITHUB_REF_NAME}" | tr '/_' '-')
           TS=$(date -u +"%Y%m%d-%H%M%S")
+          
           PRE_VERSION="${BASE_VERSION}-${SAFE_BRANCH}-${TS}"
           echo "pre_version=$PRE_VERSION" >> $GITHUB_OUTPUT
 
       - name: Set version in pom.xml
         run: |
-          mvn -B versions:set -DnewVersion=${{ steps.version.outputs.pre_version }}
+          mvn -B versions:set -DnewVersion=${{ steps.version.outputs.pre_version }} -DgenerateBackupPoms=false
           mvn -B versions:commit
 
       - name: Build and deploy pre-release
