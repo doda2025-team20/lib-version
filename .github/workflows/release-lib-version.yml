@@ -42,8 +42,13 @@ jobs:
       - name: Commit release version and tag
         run: |
           git add pom.xml
-          git commit -m "Release ${{ env.RELEASE_VERSION }}"
-          git tag "v${{ env.RELEASE_VERSION }}"
+          if git diff --cached --quiet; then
+            echo "No changes to commit (already stable)."
+          else
+            git commit -m "Release ${{ env.RELEASE_VERSION }}"
+          fi
+
+          git tag "v${{ env.RELEASE_VERSION }}" || echo "Tag already exists."
 
       - name: Bump to next snapshot version
         run: |
